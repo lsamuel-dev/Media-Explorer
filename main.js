@@ -42,6 +42,7 @@ const state = {
   isLoading: false,
   history: [],
   saved: loadSaved(),
+  userProvidedKey: null, // Temporary storage for live session key
 };
 
 /* =========================
@@ -137,9 +138,20 @@ function startNewSearch(query) {
 }
 
 async function fetchAndRender({ append }) {
-  if (!PEXELS_API_KEY || PEXELS_API_KEY.includes("PASTE_YOUR")) {
-    setStatus("Add your Pexels API key in main.js to run searches locally.");
-    return;
+  // Logic updated to allow user-provided keys on live site
+  let activeKey = PEXELS_API_KEY || state.userProvidedKey;
+
+  if (!activeKey || activeKey.includes("PASTE_YOUR")) {
+    const promptKey = prompt(
+      "Please enter your Pexels API Key to view live results:"
+    );
+    if (promptKey) {
+      state.userProvidedKey = promptKey;
+      activeKey = promptKey;
+    } else {
+      setStatus("API Key required. Search is disabled.");
+      return;
+    }
   }
 
   state.isLoading = true;
@@ -152,6 +164,7 @@ async function fetchAndRender({ append }) {
       media: state.media,
       page: state.page,
       perPage: PER_PAGE,
+      key: activeKey, // Pass the active key
     });
 
     const items = normalizeResults(state.media, data);
@@ -173,7 +186,12 @@ async function fetchAndRender({ append }) {
     }
   } catch (err) {
     console.error(err);
-    setStatus("Something went wrong. Check your connection and try again.");
+    if (err.message.includes("401")) {
+      state.userProvidedKey = null; // Clear bad key
+      setStatus("Invalid API Key. Please refresh and try again.");
+    } else {
+      setStatus("Something went wrong. Check your connection.");
+    }
   } finally {
     state.isLoading = false;
   }
@@ -183,7 +201,7 @@ async function fetchAndRender({ append }) {
    API
    ========================= */
 
-async function fetchPexels({ query, media, page, perPage }) {
+async function fetchPexels({ query, media, page, perPage, key }) {
   const url = new URL(media === "videos" ? API.videos : API.photos);
   url.searchParams.set("query", query);
   url.searchParams.set("page", String(page));
@@ -191,7 +209,7 @@ async function fetchPexels({ query, media, page, perPage }) {
 
   const res = await fetch(url.toString(), {
     headers: {
-      Authorization: PEXELS_API_KEY,
+      Authorization: key, // Using dynamic key
     },
   });
 
@@ -216,7 +234,7 @@ function normalizeResults(media, data) {
         media: "videos",
         thumb,
         author: v?.user?.name || "Unknown",
-        link: v?.url || "", // Pexels page (reliable)
+        link: v?.url || "",
       };
     });
   }
@@ -273,7 +291,7 @@ function renderResults(items) {
     let watch = null;
     if (item.media === "videos") {
       watch = document.createElement("a");
-      watch.href = item.link; // Pexels page (reliable, no Cloudflare 403)
+      watch.href = item.link;
       watch.target = "_blank";
       watch.rel = "noopener noreferrer";
       watch.textContent = "Watch on Pexels";
@@ -380,9 +398,11 @@ function saveItem(item) {
   persistSaved();
   renderSaved();
 
-  const card = document.querySelector(
-    `.js-grid [data-id="${cssEscape(item.id)}"]`
+  // Updated to use a safer selector method
+  const card = Array.from(document.querySelectorAll(".js-grid .card")).find(
+    (c) => c.dataset.id === item.id
   );
+
   if (card) {
     const btn = card.querySelector("button[data-action='save']");
     if (btn) {
@@ -453,8 +473,4 @@ function escapeHtml(str) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function cssEscape(value) {
-  return String(value).replaceAll('"', '\\"');
 }
