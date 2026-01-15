@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Google Font (Requirement #7) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Compiled CSS -->
+    <link rel="stylesheet" href="Styles/style.css" />
+
+    <title>Media Explorer</title>
+  </head>
+
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <h1 class="site-title">Media Explorer</h1>
+        <p class="site-subtitle">
+          Search photos (and short videos) by keyword.
+        </p>
+      </div>
+
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#results">Results</a>
+        <a href="#saved">Saved</a>
+      </nav>
+    </header>
+
+    <main class="site-main">
+      <section class="search-panel" aria-label="Search">
+        <form class="search-form js-search-form">
+          <label class="sr-only" for="searchInput">Search</label>
+          <input
+            id="searchInput"
+            class="search-input js-search-input"
+            type="search"
+            name="search"
+            placeholder="Try: coffee shop, Norway, desk setup..."
+            autocomplete="off"
+            required
+          />
+          <button class="search-button" type="submit">Search</button>
+        </form>
+
+        <div class="controls">
+          <div class="toggle" role="group" aria-label="Media type">
+            <button
+              type="button"
+              class="toggle-btn js-media-btn"
+              data-media="photos"
+            >
+              Photos
+            </button>
+            <button
+              type="button"
+              class="toggle-btn js-media-btn"
+              data-media="videos"
+            >
+              Videos
+            </button>
+          </div>
+
+          <div class="history js-history" aria-label="Search history"></div>
+        </div>
+
+        <p class="status js-status" aria-live="polite"></p>
+      </section>
+
+      <section id="results" class="results" aria-label="Results">
+        <div class="grid js-grid"></div>
+
+        <div class="load-more-wrap">
+          <button type="button" class="load-more js-load-more" hidden>
+            Load more
+          </button>
+        </div>
+      </section>
+
+      <section id="saved" class="saved" aria-label="Saved items">
+        <h2>Saved</h2>
+        <div class="grid js-saved-grid"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <small
+        >Built for Bootcamp Project 2 • API-powered search + responsive flex
+        layout</small
+      >
+    </footer>
+
+    <script src="main.js"></script>
+  </body>
+</html>
