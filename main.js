@@ -286,16 +286,14 @@ function renderResults(items) {
     view.href = item.link;
     view.target = "_blank";
     view.rel = "noopener noreferrer";
-    view.textContent = "View source";
+    view.textContent = "Source";
 
-    let watch = null;
-    if (item.media === "videos") {
-      watch = document.createElement("a");
-      watch.href = item.link;
-      watch.target = "_blank";
-      watch.rel = "noopener noreferrer";
-      watch.textContent = "Watch on Pexels";
-    }
+    // NEW: Download Button logic
+    const download = document.createElement("a");
+    download.href = item.thumb;
+    download.target = "_blank";
+    download.setAttribute("download", `pexels-${item.id}`);
+    download.textContent = "Download";
 
     const saveBtn = document.createElement("button");
     saveBtn.type = "button";
@@ -304,10 +302,7 @@ function renderResults(items) {
     saveBtn.textContent = isSaved(item.id) ? "Saved" : "Save";
     saveBtn.disabled = isSaved(item.id);
 
-    actions.append(view);
-    if (watch) actions.append(watch);
-    actions.append(saveBtn);
-
+    actions.append(view, download, saveBtn);
     body.append(meta, actions);
     card.append(img, body);
     frag.appendChild(card);
@@ -398,7 +393,6 @@ function saveItem(item) {
   persistSaved();
   renderSaved();
 
-  // Updated to use a safer selector method
   const card = Array.from(document.querySelectorAll(".js-grid .card")).find(
     (c) => c.dataset.id === item.id
   );
@@ -437,14 +431,10 @@ function renderSaved() {
             <div class="card-actions">
               <a href="${escapeHtml(
                 item.link
-              )}" target="_blank" rel="noopener noreferrer">View source</a>
-              ${
-                item.media === "videos"
-                  ? `<a href="${escapeHtml(
-                      item.link
-                    )}" target="_blank" rel="noopener noreferrer">Watch on Pexels</a>`
-                  : ""
-              }
+              )}" target="_blank" rel="noopener noreferrer">Source</a>
+              <a href="${escapeHtml(
+                item.thumb
+              )}" target="_blank" download="saved-media">Download</a>
               <button type="button" data-action="remove">Remove</button>
             </div>
           </div>
