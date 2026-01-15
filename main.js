@@ -1,6 +1,9 @@
 "use strict";
 
-const PEXELS_API_KEY = ""; // Paste your key here for local testing
+/* =========================
+   CONFIG
+   ========================= */
+const PEXELS_API_KEY = ""; // Paste your key here for local testing only
 
 const API = {
   photos: "https://api.pexels.com/v1/search",
@@ -11,6 +14,9 @@ const PER_PAGE = 12;
 const HISTORY_LIMIT = 5;
 const STORAGE_KEY = "mediaExplorerSaved_v1";
 
+/* =========================
+   DOM ELEMENTS
+   ========================= */
 const $form = document.querySelector(".js-search-form");
 const $input = document.querySelector(".js-search-input");
 const $status = document.querySelector(".js-status");
@@ -20,6 +26,9 @@ const $history = document.querySelector(".js-history");
 const $savedGrid = document.querySelector(".js-saved-grid");
 const $mediaButtons = document.querySelectorAll(".js-media-btn");
 
+/* =========================
+   STATE
+   ========================= */
 const state = {
   query: "",
   media: "photos",
@@ -30,16 +39,21 @@ const state = {
   userProvidedKey: null,
 };
 
+/* =========================
+   INITIALIZATION
+   ========================= */
 init();
 
 function init() {
   renderSaved();
+
   $form.addEventListener("submit", (e) => {
     e.preventDefault();
     const q = $input.value.trim();
     if (!q) return;
     startNewSearch(q);
   });
+
   $mediaButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const next = btn.dataset.media;
@@ -49,17 +63,20 @@ function init() {
       if (state.query) startNewSearch(state.query);
     });
   });
+
   $loadMore.addEventListener("click", () => {
     if (state.isLoading || !state.query) return;
     state.page += 1;
     fetchAndRender({ append: true });
   });
+
   $history.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-q]");
     if (!btn) return;
     $input.value = btn.dataset.q;
     startNewSearch(btn.dataset.q);
   });
+
   document.addEventListener("click", (e) => {
     const saveBtn = e.target.closest("button[data-action='save']");
     const removeBtn = e.target.closest("button[data-action='remove']");
@@ -70,11 +87,15 @@ function init() {
     }
     if (removeBtn && id) removeSaved(id);
   });
+
   setActiveMediaButton(state.media);
   renderHistory();
   setStatus("Search for photos and short videos above.");
 }
 
+/* =========================
+   CORE LOGIC
+   ========================= */
 function startNewSearch(query) {
   state.query = query;
   state.page = 1;
@@ -92,13 +113,15 @@ async function fetchAndRender({ append }) {
       state.userProvidedKey = promptKey;
       activeKey = promptKey;
     } else {
-      setStatus("API Key required.");
+      setStatus("API Key required. Search is disabled.");
       return;
     }
   }
+
   state.isLoading = true;
   setStatus("Loading…");
   $loadMore.hidden = true;
+
   try {
     const data = await fetchPexels({
       query: state.query,
@@ -107,12 +130,14 @@ async function fetchAndRender({ append }) {
       perPage: PER_PAGE,
       key: activeKey,
     });
+
     const items = normalizeResults(state.media, data);
     if (!append) clearResults();
     if (items.length === 0 && state.page === 1) {
       setStatus(`No results for "${state.query}".`);
       return;
     }
+
     setStatus(`Showing results for "${state.query}".`);
     renderResults(items);
     if (items.length === PER_PAGE) $loadMore.hidden = false;
@@ -148,6 +173,9 @@ function normalizeResults(media, data) {
   }));
 }
 
+/* =========================
+   RENDERING
+   ========================= */
 function renderResults(items) {
   const frag = document.createDocumentFragment();
   items.forEach((item) => {
@@ -162,10 +190,12 @@ function renderResults(items) {
           <a href="${item.link}" target="_blank">View</a>
           <a href="${
             item.link
-          }" target="_blank" style="color: green;">Download</a>
+          }" target="_blank" style="color: #28a745; font-weight: bold;">Download</a>
           <button type="button" data-action="save" ${
             isSaved(item.id) ? "disabled" : ""
-          }>${isSaved(item.id) ? "Saved" : "Save"}</button>
+          }>
+            ${isSaved(item.id) ? "Saved" : "Save"}
+          </button>
         </div>
       </div>`;
     frag.appendChild(card);
@@ -175,7 +205,7 @@ function renderResults(items) {
 
 function renderSaved() {
   if (!state.saved.length) {
-    $savedGrid.innerHTML = `<p>No saved items yet.</p>`;
+    $savedGrid.innerHTML = `<p class="card-meta">No saved items yet.</p>`;
     return;
   }
   $savedGrid.innerHTML = state.saved
@@ -187,7 +217,7 @@ function renderSaved() {
         <div class="card-meta">By: ${item.author}</div>
         <div class="card-actions">
           <a href="${item.link}" target="_blank">View</a>
-          <a href="${item.link}" target="_blank" style="color: green;">Download</a>
+          <a href="${item.link}" target="_blank" style="color: #28a745; font-weight: bold;">Download</a>
           <button type="button" data-action="remove">Remove</button>
         </div>
       </div>
@@ -196,6 +226,9 @@ function renderSaved() {
     .join("");
 }
 
+/* =========================
+   HELPERS
+   ========================= */
 function clearResults() {
   $grid.innerHTML = "";
 }
@@ -226,7 +259,7 @@ function renderHistory() {
 function loadSaved() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch {
+  } catch (e) {
     return [];
   }
 }
@@ -250,16 +283,18 @@ function removeSaved(id) {
 function safeJsonParse(str) {
   try {
     return JSON.parse(str);
-  } catch {
+  } catch (e) {
     return null;
   }
 }
 function escapeHtml(str) {
-  return String(str).replace(
-    /[&<>"']/g,
-    (m) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[
-        m
-      ])
-  );
+  return String(str).replace(/[&<>"']/g, function (m) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    }[m];
+  });
 }
